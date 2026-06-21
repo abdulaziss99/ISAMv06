@@ -896,9 +896,45 @@ function renderProfil() {
   rb.textContent = role; rb.className = 'profil-role-badge prb-'+role.toLowerCase();
   document.getElementById('pNik').textContent = SESSION.nik||'-';
   document.getElementById('pEmail').textContent = SESSION.email||'-';
-  document.getElementById('pCompany').textContent = SESSION.company_id||'-';
-  document.getElementById('pArea').textContent = (SESSION.area_id||'-')+' / '+(SESSION.subarea_id||'-');
+  document.getElementById('pCompany').textContent = SESSION.company_id||'-'; // sementara, akan di-resolve
+  document.getElementById('pArea').textContent = (SESSION.area_id||'-')+' / '+(SESSION.subarea_id||'-'); // sementara
   document.getElementById('pRole').textContent = role;
+  // Resolve kode ke nama dari master data
+  resolveProfilNames();
+}
+
+async function resolveProfilNames() {
+  try {
+    const mkBody = (sheet) => JSON.stringify({action:'crudMaster', action_type:'READ', sheet_name:sheet, caller_nik:SESSION.nik||'SYSTEM'});
+    const [resCmp, resArea, resSub] = await Promise.all([
+      fetch(APPS_SCRIPT_URL, {method:'POST', body:mkBody('MASTER_PERUSAHAAN')}),
+      fetch(APPS_SCRIPT_URL, {method:'POST', body:mkBody('MASTER_AREA')}),
+      fetch(APPS_SCRIPT_URL, {method:'POST', body:mkBody('MASTER_SUBAREA')}),
+    ]);
+    const [jCmp, jArea, jSub] = await Promise.all([resCmp.json(), resArea.json(), resSub.json()]);
+
+    // Resolve nama perusahaan
+    if (jCmp.status === 'ok' && jCmp.data) {
+      const cmp = jCmp.data.find(r => r.company_id === SESSION.company_id);
+      if (cmp) document.getElementById('pCompany').textContent = cmp.nama_perusahaan || SESSION.company_id;
+    }
+
+    // Resolve nama area & subarea
+    let namaArea = SESSION.area_id || '-';
+    let namaSubarea = SESSION.subarea_id || '-';
+    if (jArea.status === 'ok' && jArea.data) {
+      const area = jArea.data.find(r => r.area_id === SESSION.area_id);
+      if (area) namaArea = area.nama_area || SESSION.area_id;
+    }
+    if (jSub.status === 'ok' && jSub.data) {
+      const sub = jSub.data.find(r => r.subarea_id === SESSION.subarea_id);
+      if (sub) namaSubarea = sub.nama_subarea || SESSION.subarea_id;
+    }
+    document.getElementById('pArea').textContent = namaArea + ' / ' + namaSubarea;
+  } catch(e) {
+    // Fallback tetap tampilkan kode jika gagal fetch
+    console.warn('resolveProfilNames error:', e);
+  }
 }
 
 // ── LOAD DATA ──
