@@ -1013,6 +1013,12 @@ function renderStats() {
 // ── NOTIFIKASI SYSTEM ──
 let notifReadIds = new Set(JSON.parse(localStorage.getItem('notif_read') || '[]'));
 
+function fmtDate(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+}
+
 function loadNotif() {
   const notifs = [];
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1021,16 +1027,13 @@ function loadNotif() {
   // 1. Temuan OVERDUE
   const overdueTemuan = getFiltered('overdue');
   if (overdueTemuan.length > 0) {
-    const ids = overdueTemuan.map(t=>t.temuan_id).join(',');
     notifs.push({
       id: 'overdue_'+todayStr,
-      type: 'overdue',
-      icon: '🚨',
-      iconBg: 'background:var(--red-bg)',
+      type: 'overdue', filter: 'overdue',
+      icon: '🚨', iconBg: 'background:var(--red-bg)',
       title: overdueTemuan.length + ' Temuan Melewati Batas Waktu!',
       sub: overdueTemuan.slice(0,3).map(t=>'• '+t.nama_alat+' ('+t.nama_subarea+')').join('\n') + (overdueTemuan.length>3?' dan '+(overdueTemuan.length-3)+' lainnya...':''),
-      time: 'Hari ini',
-      color: 'unread-red',
+      time: 'Hari ini', color: 'unread-red',
     });
   }
 
@@ -1039,13 +1042,11 @@ function loadNotif() {
   if (dueTodayTemuan.length > 0) {
     notifs.push({
       id: 'today_'+todayStr,
-      type: 'today',
-      icon: '⏰',
-      iconBg: 'background:var(--yellow-bg)',
+      type: 'today', filter: 'open',
+      icon: '⏰', iconBg: 'background:var(--yellow-bg)',
       title: dueTodayTemuan.length + ' Temuan Jatuh Tempo Hari Ini',
       sub: dueTodayTemuan.slice(0,3).map(t=>'• '+t.nama_alat+' ('+t.nama_subarea+')').join('\n') + (dueTodayTemuan.length>3?' dan '+(dueTodayTemuan.length-3)+' lainnya...':''),
-      time: 'Hari ini',
-      color: 'unread-yellow',
+      time: 'Hari ini', color: 'unread-yellow',
     });
   }
 
@@ -1054,26 +1055,22 @@ function loadNotif() {
   if (critical.length > 0) {
     notifs.push({
       id: 'critical_'+todayStr,
-      type: 'critical',
-      icon: '🔥',
-      iconBg: 'background:var(--purple-bg)',
+      type: 'critical', filter: 'critical',
+      icon: '🔥', iconBg: 'background:var(--purple-bg)',
       title: critical.length + ' Temuan Risiko CRITICAL Belum Selesai',
-      sub: critical.slice(0,3).map(t=>'• '+t.nama_alat+' — due '+t.due_date).join('\n'),
-      time: 'Hari ini',
-      color: 'unread-red',
+      sub: critical.slice(0,3).map(t=>'• '+t.nama_alat+' — due '+fmtDate(t.due_date)).join('\n'),
+      time: 'Hari ini', color: 'unread-red',
     });
   }
   const high = getFiltered('high');
   if (high.length > 0) {
     notifs.push({
       id: 'high_'+todayStr,
-      type: 'high',
-      icon: '🔴',
-      iconBg: 'background:var(--red-bg)',
+      type: 'high', filter: 'high',
+      icon: '🔴', iconBg: 'background:var(--red-bg)',
       title: high.length + ' Temuan Risiko HIGH Belum Selesai',
-      sub: high.slice(0,3).map(t=>'• '+t.nama_alat+' — due '+t.due_date).join('\n'),
-      time: 'Hari ini',
-      color: 'unread-red',
+      sub: high.slice(0,3).map(t=>'• '+t.nama_alat+' — due '+fmtDate(t.due_date)).join('\n'),
+      time: 'Hari ini', color: 'unread-red',
     });
   }
 
@@ -1148,16 +1145,37 @@ function renderNotif(notifs) {
   el.innerHTML = notifs.map(n => {
     const isRead = notifReadIds.has(n.id);
     const subLines = n.sub.split('\n').map(s=>`<div>${s}</div>`).join('');
-    return `<div class="notif-card ${isRead ? '' : n.color}" onclick="markNotifRead('${n.id}',this)">
+    const navAttr = n.inspeksi_id ? `data-ins="${n.inspeksi_id}"` : (n.filter ? `data-filter="${n.filter}"` : '');
+    return `<div class="notif-card ${isRead ? '' : n.color}" ${navAttr} onclick="handleNotifClick(event,'${n.id}',this)">
       <div class="notif-icon-wrap" style="${n.iconBg}">${n.icon}</div>
       <div class="notif-body">
         <div class="notif-title">${n.title}</div>
         <div class="notif-sub">${subLines}</div>
-        <div class="notif-time">${n.time}</div>
+        <div class="notif-time">${n.time} &nbsp;·&nbsp; <span style="color:var(--primary);font-weight:600">Lihat temuan →</span></div>
       </div>
       ${!isRead ? '<div class="notif-unread-dot"></div>' : ''}
     </div>`;
   }).join('');
+}
+
+function handleNotifClick(e, id, el) {
+  // Mark as read
+  markNotifRead(id, el);
+  // Navigate ke view home (temuan list)
+  triggerView('home');
+  // Kalau ada filter spesifik, apply setelah nav
+  const filter = el.getAttribute('data-filter');
+  const insId  = el.getAttribute('data-ins');
+  setTimeout(() => {
+    if (insId) {
+      openDrawerByIns(insId);
+    } else if (filter) {
+      const chip = [...document.querySelectorAll('#viewHome .chip')].find(c => c.textContent.trim().toLowerCase().includes(filter));
+      filterTemuan(filter, chip || null);
+    } else {
+      filterTemuan('overdue', null);
+    }
+  }, 100);
 }
 
 function markNotifRead(id, el) {
