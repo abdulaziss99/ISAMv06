@@ -454,12 +454,12 @@ body{padding-bottom:var(--nav-h)}
   <!-- JADWAL -->
   <div class="view" id="viewJadwal">
     <div class="chips">
-      <div class="chip active">Semua</div>
-      <div class="chip">Hari Ini</div>
-      <div class="chip">Minggu Ini</div>
-      <div class="chip">Bulan Ini</div>
+      <div class="chip active" onclick="filterJadwal('semua',this)">Semua</div>
+      <div class="chip" onclick="filterJadwal('hari',this)">Hari Ini</div>
+      <div class="chip" onclick="filterJadwal('minggu',this)">Minggu Ini</div>
+      <div class="chip" onclick="filterJadwal('bulan',this)">Bulan Ini</div>
     </div>
-    <div class="sec-hdr"><div class="sec-title">Jadwal Inspeksi</div></div>
+    <div class="sec-hdr"><div class="sec-title" id="jadwalSectionTitle">Jadwal Inspeksi</div></div>
     <div id="jadwalList"><div class="skel" style="height:72px;margin-bottom:10px"></div><div class="skel" style="height:72px"></div></div>
   </div>
 
@@ -1119,13 +1119,56 @@ function renderAnalytics() {
 }
 
 // ── JADWAL ──
+let allJadwal = [];
+
 async function loadJadwal() {
   try {
     const res=await fetch(APPS_SCRIPT_URL+'?action=getJadwal');
     const json=await res.json();
-    renderJadwal(json.status==='ok'?json.data:getDemoJadwal());
-  } catch(e){renderJadwal(getDemoJadwal())}
+    allJadwal = json.status==='ok' ? json.data : getDemoJadwal();
+  } catch(e){ allJadwal = getDemoJadwal(); }
+  renderJadwal(allJadwal);
 }
+
+function filterJadwal(mode, el) {
+  // update active chip
+  document.querySelectorAll('#viewJadwal .chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().split('T')[0];
+
+  let filtered = allJadwal;
+  let title = 'Jadwal Inspeksi';
+
+  if (mode === 'hari') {
+    filtered = allJadwal.filter(j => {
+      if (!j.tgl_inspeksi_due) return false;
+      return j.tgl_inspeksi_due.split('T')[0] === todayStr;
+    });
+    title = 'Jadwal Hari Ini';
+  } else if (mode === 'minggu') {
+    const endOfWeek = new Date(today); endOfWeek.setDate(today.getDate() + 6);
+    filtered = allJadwal.filter(j => {
+      if (!j.tgl_inspeksi_due) return false;
+      const d = new Date(j.tgl_inspeksi_due); d.setHours(0,0,0,0);
+      return d >= today && d <= endOfWeek;
+    });
+    title = 'Jadwal Minggu Ini';
+  } else if (mode === 'bulan') {
+    filtered = allJadwal.filter(j => {
+      if (!j.tgl_inspeksi_due) return false;
+      const d = new Date(j.tgl_inspeksi_due);
+      return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    });
+    title = 'Jadwal Bulan Ini';
+  }
+
+  const titleEl = document.getElementById('jadwalSectionTitle');
+  if (titleEl) titleEl.textContent = title + (filtered.length ? ' (' + filtered.length + ')' : '');
+  renderJadwal(filtered);
+}
+
 function renderJadwal(data) {
   const el=document.getElementById('jadwalList');
   if(!data.length){el.innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">Tidak ada jadwal</div></div>';return;}
