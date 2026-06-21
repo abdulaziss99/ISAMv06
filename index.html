@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ISAM — Inspection System Asset Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="Css/indexs-responsive.css">
 <style>
 :root{
   --blue:#2563eb;
@@ -23,6 +22,7 @@ body{
   font-family:'Inter',sans-serif;
   color:var(--text);
   background:var(--bg);
+  overflow-x:hidden;
 }
 a{text-decoration:none;color:inherit}
 
@@ -81,6 +81,7 @@ a{text-decoration:none;color:inherit}
   display:flex;gap:40px;
   align-items:flex-start;
   flex-wrap:wrap;
+  overflow-x:hidden;
 }
 
 .hero-left{flex:1 1 420px;min-width:300px;color:#fff}
@@ -105,6 +106,8 @@ a{text-decoration:none;color:inherit}
 /* ===== LOGIN CARD ===== */
 .login-card{
   flex:0 0 380px;
+  width:100%;
+  max-width:420px;
   background:#fff;
   border-radius:16px;
   padding:32px;
@@ -220,6 +223,10 @@ a{text-decoration:none;color:inherit}
 /* ===== FOOTER ===== */
 .footer{background:#0b1220;color:#cbd5e1;padding:50px 5% 20px}
 .footer-grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:30px}
+@media(max-width:640px){
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .footer-grid > *:first-child{grid-column:1/-1}
+}
 .footer-brand{display:flex;gap:12px;margin-bottom:12px}
 .footer-brand .ic{width:38px;height:38px;border-radius:9px;background:var(--blue);display:flex;align-items:center;justify-content:center}
 .footer-brand strong{font-size:15px;color:#fff;display:block}
@@ -231,9 +238,20 @@ a{text-decoration:none;color:inherit}
 .footer-bottom{text-align:center;font-size:11.5px;color:#64748b;border-top:1px solid #1e293b;margin-top:30px;padding-top:18px}
 
 @media(max-width:860px){
-  .hero-inner{flex-direction:column}
-  .login-card{flex:1 1 100%;width:100%}
+  .hero-inner{flex-direction:column;padding:70px 4% 40px}
+  .login-card{flex:1 1 100%;width:100%;max-width:100%}
   .hero-left h2{font-size:34px}
+  .hero-left{min-width:0;width:100%}
+}
+@media(max-width:480px){
+  .topbar{padding:10px 4%}
+  .topbar-right{display:none}
+  .hero-inner{padding:60px 4% 30px;gap:24px}
+  .hero-left h2{font-size:26px}
+  .hero-left h3{font-size:16px}
+  .login-card{padding:24px 20px;border-radius:12px}
+  .hero-logos{left:4%;top:16px}
+  .hero-logos .logo-chip{padding:6px 10px}
 }
 </style>
 </head>
@@ -461,12 +479,12 @@ a{text-decoration:none;color:inherit}
       <h4>Kontak</h4>
       <ul>
         <li>📞 +62 812-3456-7890</li>
-        <li>✉️ helpdesk@ckbib.co.id</li>
-        <li>📍 CIA office site, Kalimantan Selatan, Indonesia</li>
+        <li>✉️ helpdesk@bib.co.id</li>
+        <li>📍 BIB Site Office, Kalimantan Timur, Indonesia</li>
       </ul>
     </div>
   </div>
-  <div class="footer-bottom">© 2026 PT. CK. All rights reserved.</div>
+  <div class="footer-bottom">© 2026 PT. BIB. All rights reserved.</div>
 </div>
 
 <script>
